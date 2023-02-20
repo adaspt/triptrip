@@ -1,11 +1,8 @@
-import {
-  Auth,
-  getAuth,
-  getRedirectResult,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithRedirect
-} from 'firebase/auth';
+import { Auth, getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithRedirect, User } from 'firebase/auth';
+import { AppUser } from './model';
+
+const mapUser = (listener: (user: AppUser | undefined) => void) => (user: User | null) =>
+  listener(user ? { id: user.uid, email: user.email || undefined, displayName: user.displayName || '' } : undefined);
 
 export class AuthClient {
   private provider: GoogleAuthProvider;
@@ -14,22 +11,10 @@ export class AuthClient {
   constructor() {
     this.provider = new GoogleAuthProvider();
     this.auth = getAuth();
-    onAuthStateChanged(this.auth, (user) => {
-      if (user) {
-        console.log('AUTHENTICATED', user.displayName);
-      } else {
-        console.log('ANONYMOUS');
-      }
-    });
   }
 
-  async initialize() {
-    try {
-      const result = await getRedirectResult(this.auth);
-      console.log('AUTHENTICATED', result?.user.displayName);
-    } catch (ex) {
-      console.error('AUTH INIT FAILED', ex);
-    }
+  subscribe(listener: (user: AppUser | undefined) => void) {
+    return onAuthStateChanged(this.auth, mapUser(listener));
   }
 
   signIn() {
